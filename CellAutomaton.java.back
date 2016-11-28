@@ -1,0 +1,162 @@
+import java.util.HashMap;
+public class CellAutomaton{
+    //TOWANT: Stringではなくboolで管理
+    //TODO: existは曖昧なので、はっきりした名前に
+    //FIX: xとy逆に!!!
+    private boolean shouldStopAnimate;
+    private String noneStr;
+    private String existStr;
+    private int maxWidth;
+    private int maxHeight;
+    private int judgeCountMin;
+    private int judgeCountMax;
+    private String[][] cells;
+
+    CellAutomaton(){
+    //TODO:引数取るコンストラクタ作る
+        this.shouldStopAnimate = false;
+        // this.noneStr = " ";
+        // this.existStr = "#";
+
+        //背景色を変える
+        this.noneStr = "\u001b[00;40m  \u001b[00m";//"\u001b[00;47m \u001b[00m";//MEMO:空白の所に表示したい文字を入れる
+        //文字色を変える
+        this.existStr = "\u001b[00;42m  \u001b[00m";//"\u001b[00;33m#\u001b[00m";//MEMO:#のところに表示したい文字を入れる
+        this.maxWidth = 70;
+        this.maxHeight = 47;
+        this.judgeCountMin = 2;
+        this.judgeCountMax = 3;
+        this.cells = new String[this.maxHeight][this.maxWidth];
+
+        //TODO:設定できるように and HashMapで作る
+        int[][] initExistCells = new int[3][3];
+        initExistCells[0][0] = this.maxHeight/2;
+        initExistCells[0][1] = this.maxWidth/2-1;
+        initExistCells[1][0] = this.maxHeight/2-1;
+        initExistCells[1][1] = this.maxWidth/2;
+        initExistCells[2][0] = this.maxHeight/2;
+        initExistCells[2][1] = this.maxWidth/2+1;
+
+        initCells(initExistCells);
+    }
+
+    public void startAnimate(int stopMillSec){
+        while (!this.shouldStopAnimate){
+            System.out.println(show());
+            sleep(stopMillSec);
+            updateCells();
+        }
+    }
+
+    public void stopAnimate(){
+        this.shouldStopAnimate = true;
+    };
+
+    //noneStrで塗りつぶし、初期存在セルをexistStrにする
+    //initExistCells == {x, y}
+    private void initCells(int[][] initExistCells){
+        boolean isExistCell = false;
+        for (int i = 0; i < this.cells.length; i++) {
+            for(int j = 0; j < this.cells[i].length; j++){
+                for (int[] existCell : initExistCells) {
+                    if(existCell[0] == i && existCell[1] == j){
+                        isExistCell = true;
+                        break;
+                    }
+                }
+                if(isExistCell){
+                    this.cells[i][j] = this.existStr;
+                    isExistCell = false;
+                }else{
+                    this.cells[i][j] = this.noneStr;
+                }
+            }
+        }
+    }
+
+    //TODO:関数名再考
+    private String show(){
+        String res = "";
+        for(int i = 0; i < this.cells.length; i++){
+            for(int j = 0; j < this.cells[i].length; j++){
+                res += this.cells[i][j];
+                if(j == this.maxWidth - 1){
+                    if(i != this.maxHeight - 1){//MEMO:最終行は改行いらない
+                        res += "\n";
+                    }
+                }else{
+                    //MEMO:色で表示するときは不要
+                    //res += ", ";
+                }
+            }
+        }
+        return res;
+    }
+
+    //周囲8マスのなかでexistCellなのが何個あるか
+    private int pointCount(int x, int y){
+        int cnt = 0;
+        if(x-1 >= 0 && y-1 >= 0 && this.cells[x-1][y-1] == this.existStr){
+            cnt++;
+        }
+        if(x+1 <= this.maxHeight-1 && y+1 <= this.maxWidth-1 && this.cells[x+1][y+1] == this.existStr){
+            cnt++;
+        }
+
+        if(x-1 >= 0 && this.cells[x-1][y] == this.existStr){
+            cnt++;
+        }
+        if(y-1 >= 0 && this.cells[x][y-1] == this.existStr){
+            cnt++;
+        }
+
+        if(x+1 <= this.maxHeight-1 && this.cells[x+1][y] == this.existStr){
+            cnt++;
+        }
+        if(y+1 <= this.maxWidth-1 && this.cells[x][y+1] == this.existStr){
+            cnt++;
+        }
+
+        if(x-1 >= 0 && y+1 <= this.maxWidth-1 && this.cells[x-1][y+1] == this.existStr){
+            cnt++;
+        }
+        if(x+1 <= this.maxHeight-1 && y-1 >= 0 && this.cells[x+1][y-1] == this.existStr){
+            cnt++;
+        }
+        return cnt;
+    }
+
+    private void updateCells(){
+        String[][] changedCells = new String[this.maxHeight][this.maxWidth];
+        for(int i = 0; i < changedCells.length; i++){
+            for(int j = 0; j < changedCells[i].length; j++){
+                int cnt = pointCount(i, j);
+                if(this.judgeCountMin <= cnt && cnt <= this.judgeCountMax){
+                    changedCells[i][j] = this.existStr;
+                }else{
+                    changedCells[i][j] = this.noneStr;
+                }
+            }
+        }
+        this.cells = changedCells;
+    }
+    // private void updateCells(){
+    //     for(int i = 0; i < this.cells.length; i++){
+    //         for(int j = 0; j < this.cells[i].length; j++){
+    //             int cnt = pointCount(i, j);
+    //             if(this.judgeCountMin <= cnt && cnt <= this.judgeCountMax){
+    //                 this.cells[i][j] = this.existStr;
+    //             }else{
+    //                 this.cells[i][j] = this.noneStr;
+    //             }
+    //         }
+    //     }
+    // }
+
+    private void sleep(int sec){
+        try{
+            Thread.sleep(sec);
+        } catch (InterruptedException e){
+        }
+    }
+}
